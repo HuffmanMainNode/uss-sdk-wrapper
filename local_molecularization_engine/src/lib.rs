@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use aes_gcm::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
-    Aes256Gcm, Nonce
+    Aes256Gcm
 };
 use sha2::{Sha256, Digest};
 use serde::{Serialize, Deserialize};
@@ -23,7 +23,7 @@ fn edge_molecularizer(raw_data: String, session_seed: String) -> PyResult<String
     let mut hasher = Sha256::new();
     hasher.update(session_seed.as_bytes());
     let key_bytes = hasher.finalize();
-    
+
     // Initialize AES-GCM cipher
     let cipher = Aes256Gcm::new_from_slice(&key_bytes)
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Invalid key length: {}", e)))?;
@@ -35,7 +35,7 @@ fn edge_molecularizer(raw_data: String, session_seed: String) -> PyResult<String
     for (i, chunk) in data_bytes.chunks(8).enumerate() {
         // Generate a unique 96-bit nonce for this specific chunk
         let nonce_bytes = Aes256Gcm::generate_nonce(&mut OsRng);
-        
+
         // 3. Encapsulate: Apply AES-GCM encryption
         let ciphertext_with_tag = cipher.encrypt(&nonce_bytes, chunk)
             .map_err(|_| pyo3::exceptions::PyRuntimeError::new_err("Encryption failed"))?;
@@ -67,7 +67,7 @@ fn edge_molecularizer(raw_data: String, session_seed: String) -> PyResult<String
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn local_molecularization_engine(_py: Python, m: &PyModule) -> PyResult<()> {
+fn local_molecularization_engine(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(edge_molecularizer, m)?)?;
     Ok(())
 }
